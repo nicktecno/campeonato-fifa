@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-display: "Segoe UI", system-ui, sans-serif;
+}
+
+body {
+  background: #0d2818;
+  color: #f0fdf4;
+  min-height: 100vh;
+}
+
+@layer utilities {
+  .pitch-gradient {
+    background: linear-gradient(
+      180deg,
+      #1a4d2e 0%,
+      #2d6a4f 40%,
+      #2d6a4f 60%,
+      #1a4d2e 100%
+    );
+  }
+
+  .pitch-lines {
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.08) 2px, transparent 2px),
+      repeating-linear-gradient(
+        90deg,
+        transparent,
+        transparent 80px,
+        rgba(255, 255, 255, 0.03) 80px,
+        rgba(255, 255, 255, 0.03) 160px
+      );
+  }
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
