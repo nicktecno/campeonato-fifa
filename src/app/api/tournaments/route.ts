@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createTournament, getAllTournaments } from "@/lib/store";
 
 export async function GET() {
-  const tournaments = getAllTournaments();
+  const tournaments = await getAllTournaments();
   return NextResponse.json(tournaments);
 }
 
@@ -17,6 +17,6 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const tournament = createTournament(name, teamType);
+  const tournament = await createTournament(name, teamType);
   return NextResponse.json(tournament, { status: 201 });
 }

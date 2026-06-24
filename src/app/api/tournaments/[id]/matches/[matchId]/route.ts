@@ -6,7 +6,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string; matchId: string }> }
 ) {
   const { id, matchId } = await params;
-  const tournament = getTournament(id);
+  const tournament = await getTournament(id);
 
   if (!tournament) {
     return NextResponse.json(
@@ -33,7 +33,7 @@ export async function PATCH(
     );
   }
 
-  const updated = updateMatchScore(id, matchId, score1, score2);
+  const updated = await updateMatchScore(id, matchId, score1, score2);
 
   if (!updated) {
     return NextResponse.json(

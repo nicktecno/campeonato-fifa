@@ -6,7 +6,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string; playerId: string }> }
 ) {
   const { id, playerId } = await params;
-  const tournament = getTournament(id);
+  const tournament = await getTournament(id);
 
   if (!tournament) {
     return NextResponse.json(
@@ -41,7 +41,7 @@ export async function PATCH(
     );
   }
 
-  const result = updatePlayer(id, playerId, { name, teamId, avatar });
+  const result = await updatePlayer(id, playerId, { name, teamId, avatar });
 
   if ("error" in result) {
     return NextResponse.json({ error: result.error }, { status: 400 });

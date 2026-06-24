@@ -5,6 +5,13 @@ import {
   isGroupStageComplete,
   seedKnockoutFromGroups,
 } from "./groups";
+import { isDbEnabled } from "./db";
+import {
+  dbGetTournament,
+  dbGetAllTournaments,
+  dbSaveTournament,
+  dbDeleteTournament,
+} from "./repository";
 
 const globalForStore = globalThis as unknown as {
   tournaments: Map<string, Tournament> | undefined;
@@ -21,10 +28,69 @@ function generateId(): string {
   return Math.random().toString(36).substring(2, 11);
 }
 
-export function createTournament(
+function memoryGet(id: string): Tournament | undefined {
+  return tournaments.get(id);
+}
+
+function memorySave(t: Tournament): void {
+  tournaments.set(t.id, t);
+}
+
+function advanceToKnockout(tournament: Tournament): void {
+  const { matches: knockoutMatches } = seedKnockoutFromGroups(
+    tournament.groups,
+    tournament.matches,
+    tournament.players
+  );
+  tournament.matches = [...tournament.matches, ...knockoutMatches];
+  tournament.status = "knockout";
+}
+
+function propagateWinner(
+  tournament: Tournament,
+  match: Match,
+  winnerId: string | null
+): void {
+  if (!match.nextMatchId || !match.nextSlot) return;
+
+  const nextMatch = tournament.matches.find((m) => m.id === match.nextMatchId);
+  if (!nextMatch) return;
+
+  if (match.nextSlot === 1) {
+    nextMatch.player1Id = winnerId;
+  } else {
+    nextMatch.player2Id = winnerId;
+  }
+
+  nextMatch.score1 = null;
+  nextMatch.score2 = null;
+  nextMatch.winnerId = null;
+
+  if (nextMatch.nextMatchId) {
+    propagateWinner(tournament, nextMatch, null);
+  }
+}
+
+async function persist(t: Tournament): Promise<void> {
+  if (isDbEnabled()) {
+    await dbSaveTournament(t);
+  } else {
+    memorySave(t);
+  }
+}
+
+async function load(id: string): Promise<Tournament | undefined> {
+  if (isDbEnabled()) {
+    const t = await dbGetTournament(id);
+    return t ?? undefined;
+  }
+  return memoryGet(id);
+}
+
+export async function createTournament(
   name: string,
   teamType: "club" | "national"
-): Tournament {
+): Promise<Tournament> {
   const tournament: Tournament = {
     id: generateId(),
     name,
@@ -36,15 +102,15 @@ export function createTournament(
     createdAt: new Date().toISOString(),
   };
 
-  tournaments.set(tournament.id, tournament);
+  await persist(tournament);
   return tournament;
 }
 
-export function registerPlayer(
+export async function registerPlayer(
   tournamentId: string,
   data: { name: string; teamId: string; avatar?: string }
-): Player | { error: string } {
-  const tournament = tournaments.get(tournamentId);
+): Promise<Player | { error: string }> {
+  const tournament = await load(tournamentId);
   if (!tournament || tournament.status !== "registration") {
     return { error: "Campeonato fechado ou não encontrado" };
   }
@@ -61,15 +127,16 @@ export function registerPlayer(
   };
 
   tournament.players.push(player);
+  await persist(tournament);
   return player;
 }
 
-export function updatePlayer(
+export async function updatePlayer(
   tournamentId: string,
   playerId: string,
   data: { name?: string; teamId?: string; avatar?: string }
-): Player | { error: string } {
-  const tournament = tournaments.get(tournamentId);
+): Promise<Player | { error: string }> {
+  const tournament = await load(tournamentId);
   if (!tournament || tournament.status !== "registration") {
     return { error: "Campeonato fechado ou não encontrado" };
   }
@@ -101,17 +168,22 @@ export function updatePlayer(
     player.avatar = data.avatar || undefined;
   }
 
+  await persist(tournament);
   return player;
 }
 
-export function getTakenTeamIds(tournamentId: string): string[] {
-  const tournament = tournaments.get(tournamentId);
+export async function getTakenTeamIds(
+  tournamentId: string
+): Promise<string[]> {
+  const tournament = await load(tournamentId);
   if (!tournament) return [];
   return tournament.players.map((p) => p.teamId);
 }
 
-export function startTournament(tournamentId: string): Tournament | null {
-  const tournament = tournaments.get(tournamentId);
+export async function startTournament(
+  tournamentId: string
+): Promise<Tournament | null> {
+  const tournament = await load(tournamentId);
   if (!tournament || tournament.status !== "registration") return null;
   if (tournament.players.length < 4) return null;
 
@@ -122,26 +194,32 @@ export function startTournament(tournamentId: string): Tournament | null {
   tournament.matches = groupMatches;
   tournament.status = "group_stage";
 
+  await persist(tournament);
   return tournament;
 }
 
-export function getTournament(id: string): Tournament | undefined {
-  return tournaments.get(id);
+export async function getTournament(
+  id: string
+): Promise<Tournament | undefined> {
+  return load(id);
 }
 
-export function getAllTournaments(): Tournament[] {
+export async function getAllTournaments(): Promise<Tournament[]> {
+  if (isDbEnabled()) {
+    return dbGetAllTournaments();
+  }
   return Array.from(tournaments.values()).sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 }
 
-export function updateMatchScore(
+export async function updateMatchScore(
   tournamentId: string,
   matchId: string,
   score1: number,
   score2: number
-): Tournament | null {
-  const tournament = tournaments.get(tournamentId);
+): Promise<Tournament | null> {
+  const tournament = await load(tournamentId);
   if (!tournament) return null;
 
   const match = tournament.matches.find((m) => m.id === matchId);
@@ -179,50 +257,15 @@ export function updateMatchScore(
     }
   }
 
+  await persist(tournament);
   return tournament;
 }
 
-function advanceToKnockout(tournament: Tournament): void {
-  const { matches: knockoutMatches } = seedKnockoutFromGroups(
-    tournament.groups,
-    tournament.matches,
-    tournament.players
-  );
-
-  tournament.matches = [...tournament.matches, ...knockoutMatches];
-  tournament.status = "knockout";
-}
-
-function propagateWinner(
-  tournament: Tournament,
-  match: Match,
-  winnerId: string | null
-): void {
-  if (!match.nextMatchId || !match.nextSlot) return;
-
-  const nextMatch = tournament.matches.find((m) => m.id === match.nextMatchId);
-  if (!nextMatch) return;
-
-  if (match.nextSlot === 1) {
-    nextMatch.player1Id = winnerId;
-  } else {
-    nextMatch.player2Id = winnerId;
-  }
-
-  nextMatch.score1 = null;
-  nextMatch.score2 = null;
-  nextMatch.winnerId = null;
-
-  if (nextMatch.nextMatchId) {
-    propagateWinner(tournament, nextMatch, null);
-  }
-}
-
-export function updateTournament(
+export async function updateTournament(
   id: string,
   data: { name?: string; teamType?: "club" | "national" }
-): Tournament | null {
-  const tournament = tournaments.get(id);
+): Promise<Tournament | null> {
+  const tournament = await load(id);
   if (!tournament) return null;
 
   if (data.name !== undefined) {
@@ -236,9 +279,13 @@ export function updateTournament(
     tournament.teamType = data.teamType;
   }
 
+  await persist(tournament);
   return tournament;
 }
 
-export function deleteTournament(id: string): boolean {
+export async function deleteTournament(id: string): Promise<boolean> {
+  if (isDbEnabled()) {
+    return dbDeleteTournament(id);
+  }
   return tournaments.delete(id);
 }

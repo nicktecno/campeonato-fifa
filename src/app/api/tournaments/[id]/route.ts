@@ -6,7 +6,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const tournament = getTournament(id);
+  const tournament = await getTournament(id);
 
   if (!tournament) {
     return NextResponse.json(
@@ -33,11 +33,14 @@ export async function PATCH(
     );
   }
 
-  const tournament = updateTournament(id, { name, teamType });
+  const tournament = await updateTournament(id, { name, teamType });
 
   if (!tournament) {
     return NextResponse.json(
-      { error: "Não foi possível editar. Campeonato não encontrado ou tipo de time só pode ser alterado durante inscrições." },
+      {
+        error:
+          "Não foi possível editar. Campeonato não encontrado ou tipo de time só pode ser alterado durante inscrições.",
+      },
       { status: 400 }
     );
   }
@@ -50,7 +53,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const deleted = deleteTournament(id);
+  const deleted = await deleteTournament(id);
 
   if (!deleted) {
     return NextResponse.json(

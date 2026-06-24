@@ -6,7 +6,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const tournament = startTournament(id);
+  const tournament = await startTournament(id);
 
   if (!tournament) {
     return NextResponse.json(

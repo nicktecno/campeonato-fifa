@@ -1,16 +1,15 @@
-# Campeonato FIFA
+# Campeonato Churrasquinho FIFA
 
-Aplicação Next.js para gerar chaveamentos automáticos de campeonatos FIFA (EA FC 26).
+Aplicação Next.js para campeonatos com fase de grupos + mata-mata (EA FC 26).
 
 ## Funcionalidades
 
-- Cole uma lista de nomes de jogadores (um por linha)
-- Escolha entre **Clubes** ou **Seleções** (top 10 EA FC 26)
-- Configure time e avatar de cada jogador
-- Geração automática de chaveamento eliminatório (mata-mata)
-- Visualização estilo campo de futebol
-- Registro de placar por partida
-- Dados armazenados em memória (resetam ao reiniciar o servidor)
+- Criação de campeonato com inscrição individual de jogadores
+- Escolha de **Clubes** ou **Seleções** (top 10 EA FC 26)
+- Avatar com zoom e recorte
+- Fase de grupos + mata-mata automático
+- Edição de jogadores durante inscrições
+- Persistência com **Neon PostgreSQL** (ou memória local sem config)
 
 ## Como rodar
 
@@ -19,10 +18,27 @@ npm install
 npm run dev
 ```
 
-Acesse [http://localhost:3000](http://localhost:3000)
+## Configurar Neon (recomendado)
+
+1. Crie um projeto em [neon.tech](https://neon.tech)
+2. No **SQL Editor**, execute o conteúdo de `db/schema.sql`
+3. Copie a connection string e crie `.env.local`:
+
+```bash
+cp .env.example .env.local
+# Edite DATABASE_URL com sua connection string do Neon
+```
+
+4. Reinicie o servidor: `npm run dev`
+
+Sem `DATABASE_URL`, o app usa memória local (dados somem ao reiniciar).
+
+## Deploy (Vercel)
+
+Adicione a variável `DATABASE_URL` nas Environment Variables do projeto.
 
 ## Tecnologias
 
 - Next.js 15 (App Router)
-- TypeScript
-- Tailwind CSS
+- TypeScript + Tailwind CSS
+- Neon PostgreSQL (`@neondatabase/serverless`)
