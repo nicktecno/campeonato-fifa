@@ -8,10 +8,10 @@ interface TeamFlagProps {
 }
 
 const sizeMap = {
-  xs: { px: 16, class: "w-4 h-4" },
-  sm: { px: 20, class: "w-5 h-5" },
-  md: { px: 28, class: "w-7 h-7" },
-  lg: { px: 40, class: "w-10 h-10" },
+  xs: { px: 20, class: "w-5 h-5" },
+  sm: { px: 24, class: "w-6 h-6" },
+  md: { px: 32, class: "w-8 h-8" },
+  lg: { px: 48, class: "w-12 h-12" },
 };
 
 export function TeamFlag({ team, size = "sm", className = "" }: TeamFlagProps) {

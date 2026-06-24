@@ -22,14 +22,14 @@ export function CreateTournamentForm({
   return (
     <div className="space-y-6">
       <div>
-        <label className="block text-sm font-medium text-white/70 mb-2">
+        <label className="block text-base font-medium text-white/80 mb-2">
           Nome do Campeonato
         </label>
         <input
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="w-full bg-black/40 border border-white/20 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-gold transition-colors"
+          className="w-full bg-black/40 border border-white/20 rounded-lg px-4 py-3.5 text-lg text-white focus:outline-none focus:border-gold transition-colors"
           placeholder="Campeonato Churrasquinho 2026"
         />
       </div>
@@ -82,7 +82,7 @@ export function CreateTournamentForm({
       <button
         onClick={() => onSubmit({ name, teamType })}
         disabled={loading || !name.trim()}
-        className="w-full bg-gold hover:bg-amber-400 disabled:opacity-60 text-pitch-dark font-bold py-4 rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98]"
+        className="w-full bg-gold hover:bg-amber-400 disabled:opacity-60 text-pitch-dark font-bold py-4 rounded-xl text-lg transition-all hover:scale-[1.02] active:scale-[0.98]"
       >
         {loading ? "Criando..." : "Criar Campeonato"}
       </button>

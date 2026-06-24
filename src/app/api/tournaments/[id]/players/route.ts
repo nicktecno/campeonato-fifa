@@ -16,14 +16,11 @@ export async function POST(
     );
   }
 
-  const player = registerPlayer(id, { name, teamId, avatar });
+  const result = registerPlayer(id, { name, teamId, avatar });
 
-  if (!player) {
-    return NextResponse.json(
-      { error: "Não foi possível cadastrar. Campeonato fechado ou não encontrado." },
-      { status: 400 }
-    );
+  if ("error" in result) {
+    return NextResponse.json({ error: result.error }, { status: 400 });
   }
 
-  return NextResponse.json(player, { status: 201 });
+  return NextResponse.json(result, { status: 201 });
 }

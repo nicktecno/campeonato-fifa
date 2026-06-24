@@ -6,10 +6,17 @@
   --font-display: "Segoe UI", system-ui, sans-serif;
 }
 
+html {
+  font-size: 118.75%;
+}
+
 body {
   background: #0d2818;
   color: #f0fdf4;
   min-height: 100vh;
+  font-size: 1.05rem;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
 }
 
 @layer utilities {

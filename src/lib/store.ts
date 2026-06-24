@@ -43,9 +43,15 @@ export function createTournament(
 export function registerPlayer(
   tournamentId: string,
   data: { name: string; teamId: string; avatar?: string }
-): Player | null {
+): Player | { error: string } {
   const tournament = tournaments.get(tournamentId);
-  if (!tournament || tournament.status !== "registration") return null;
+  if (!tournament || tournament.status !== "registration") {
+    return { error: "Campeonato fechado ou não encontrado" };
+  }
+
+  if (tournament.players.some((p) => p.teamId === data.teamId)) {
+    return { error: "Este time já foi escolhido por outro jogador" };
+  }
 
   const player: Player = {
     id: `player-${generateId()}`,
@@ -56,6 +62,12 @@ export function registerPlayer(
 
   tournament.players.push(player);
   return player;
+}
+
+export function getTakenTeamIds(tournamentId: string): string[] {
+  const tournament = tournaments.get(tournamentId);
+  if (!tournament) return [];
+  return tournament.players.map((p) => p.teamId);
 }
 
 export function startTournament(tournamentId: string): Tournament | null {

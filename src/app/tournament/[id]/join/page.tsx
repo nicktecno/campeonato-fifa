@@ -25,6 +25,16 @@ export default function JoinPage() {
       .then(setTournament)
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
+
+    const interval = setInterval(() => {
+      fetch(`/api/tournaments/${id}`)
+        .then((res) => res.ok ? res.json() : null)
+        .then((data) => {
+          if (data?.status === "registration") setTournament(data);
+        });
+    }, 4000);
+
+    return () => clearInterval(interval);
   }, [id]);
 
   const handleSubmit = async (data: {
@@ -99,10 +109,10 @@ export default function JoinPage() {
       <div className="relative max-w-md mx-auto px-4 py-12">
         <header className="text-center mb-8">
           <span className="text-4xl">⚽</span>
-          <h1 className="text-2xl font-bold text-gold mt-3">
+          <h1 className="text-3xl font-bold text-gold mt-3">
             {formatTournamentTitle(tournament.name)}
           </h1>
-          <p className="text-white/50 text-sm mt-1">
+          <p className="text-white/60 text-base mt-1">
             {tournament.teamType === "club" ? "🏟️ Clubes" : "🌍 Seleções"} ·{" "}
             {tournament.players.length} inscrito(s)
           </p>
@@ -112,6 +122,7 @@ export default function JoinPage() {
           <PlayerRegistrationForm
             teamType={tournament.teamType}
             tournamentName={tournament.name}
+            takenTeamIds={tournament.players.map((p) => p.teamId)}
             onSubmit={handleSubmit}
             loading={submitting}
             success={success}

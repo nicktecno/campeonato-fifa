@@ -47,10 +47,10 @@ export default function HomePage() {
           <div className="inline-flex items-center gap-3 mb-4">
             <span className="text-5xl">⚽</span>
             <div className="text-left">
-              <h1 className="text-3xl font-bold text-gold tracking-tight">
+              <h1 className="text-4xl font-bold text-gold tracking-tight">
                 {APP_TITLE}
               </h1>
-              <p className="text-white/50 text-sm">Fase de Grupos + Mata-Mata</p>
+              <p className="text-white/60 text-base">Fase de Grupos + Mata-Mata</p>
             </div>
           </div>
         </header>
@@ -58,10 +58,10 @@ export default function HomePage() {
         <div className="space-y-6">
           <section className="bg-black/40 backdrop-blur-sm border border-white/10 rounded-2xl p-6 shadow-2xl">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-white">Meus Campeonatos</h2>
+              <h2 className="text-xl font-bold text-white">Meus Campeonatos</h2>
               <button
                 onClick={() => setShowCreate((v) => !v)}
-                className="text-sm bg-gold/20 hover:bg-gold/30 text-gold border border-gold/30 px-3 py-1.5 rounded-lg transition-colors"
+                className="text-base bg-gold/20 hover:bg-gold/30 text-gold border border-gold/30 px-4 py-2 rounded-lg transition-colors"
               >
                 {showCreate ? "Fechar" : "+ Novo"}
               </button>

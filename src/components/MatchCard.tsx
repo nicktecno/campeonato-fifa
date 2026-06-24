@@ -11,9 +11,9 @@ interface PlayerAvatarProps {
 
 export function PlayerAvatar({ player, team, size = "md" }: PlayerAvatarProps) {
   const sizeClasses = {
-    sm: "w-6 h-6 text-xs",
-    md: "w-8 h-8 text-sm",
-    lg: "w-16 h-16 text-lg",
+    sm: "w-8 h-8 text-sm",
+    md: "w-10 h-10 text-base",
+    lg: "w-20 h-20 text-xl",
   };
 
   if (!player) {
@@ -31,8 +31,8 @@ export function PlayerAvatar({ player, team, size = "md" }: PlayerAvatarProps) {
       <Image
         src={player.avatar}
         alt={player.name}
-        width={size === "lg" ? 64 : size === "md" ? 32 : 24}
-        height={size === "lg" ? 64 : size === "md" ? 32 : 24}
+        width={size === "lg" ? 80 : size === "md" ? 40 : 32}
+        height={size === "lg" ? 80 : size === "md" ? 40 : 32}
         className={`${sizeClasses[size]} rounded-full object-cover border-2 border-gold/50`}
         unoptimized
       />
@@ -87,7 +87,7 @@ export function MatchCard({
         relative rounded-lg border transition-all duration-200
         ${isPlayed ? "border-gold/60 bg-gold/5" : "border-white/20 bg-black/30"}
         ${isClickable ? "hover:border-gold hover:shadow-lg hover:shadow-gold/10 cursor-pointer" : "opacity-60"}
-        ${compact ? "p-2 min-w-[180px]" : "p-3 min-w-[220px]"}
+        ${compact ? "p-3 min-w-[200px]" : "p-4 min-w-[260px]"}
       `}
     >
       <PlayerRow
@@ -99,7 +99,7 @@ export function MatchCard({
       />
       <div className="flex items-center gap-2 my-1">
         <div className="flex-1 h-px bg-white/20" />
-        <span className="text-[10px] text-white/40 font-bold">VS</span>
+        <span className="text-xs text-white/40 font-bold">VS</span>
         <div className="flex-1 h-px bg-white/20" />
       </div>
       <PlayerRow
@@ -143,11 +143,11 @@ function PlayerRow({
     >
       <PlayerAvatar player={player} team={team ?? undefined} size="sm" />
       <div className="flex-1 min-w-0">
-        <p className={`truncate font-medium ${compact ? "text-xs" : "text-sm"}`}>
+        <p className={`truncate font-medium ${compact ? "text-sm" : "text-base"}`}>
           {player?.name ?? "Aguardando..."}
         </p>
         {team && (
-          <p className="text-[10px] text-white/50 truncate flex items-center gap-1">
+          <p className="text-xs text-white/50 truncate flex items-center gap-1">
             <TeamFlag team={team} size="xs" />
             {team.name}
           </p>
@@ -155,7 +155,7 @@ function PlayerRow({
       </div>
       {score !== null && (
         <span
-          className={`font-bold tabular-nums ${compact ? "text-sm" : "text-base"} ${isWinner ? "text-gold" : ""}`}
+          className={`font-bold tabular-nums ${compact ? "text-base" : "text-lg"} ${isWinner ? "text-gold" : ""}`}
         >
           {score}
         </span>
