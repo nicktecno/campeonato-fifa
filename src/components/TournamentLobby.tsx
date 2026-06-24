@@ -104,6 +104,13 @@ export function TournamentLobby({
                     </p>
                   )}
                 </div>
+                <Link
+                  href={`/tournament/${tournament.id}/player/${player.id}/edit`}
+                  title="Editar jogador"
+                  className="p-2 rounded-lg text-white/40 hover:text-gold hover:bg-white/5 transition-colors shrink-0"
+                >
+                  ✏️
+                </Link>
               </div>
             );
           })}

@@ -14,6 +14,9 @@ export default function JoinPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [registeredPlayerId, setRegisteredPlayerId] = useState<string | null>(
+    null
+  );
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -56,6 +59,7 @@ export default function JoinPage() {
         return;
       }
 
+      setRegisteredPlayerId((await res.json()).id);
       setSuccess(true);
     } catch {
       alert("Erro de conexão");
@@ -122,6 +126,8 @@ export default function JoinPage() {
           <PlayerRegistrationForm
             teamType={tournament.teamType}
             tournamentName={tournament.name}
+            tournamentId={id}
+            playerId={registeredPlayerId ?? undefined}
             takenTeamIds={tournament.players.map((p) => p.teamId)}
             onSubmit={handleSubmit}
             loading={submitting}

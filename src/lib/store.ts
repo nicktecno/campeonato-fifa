@@ -64,6 +64,46 @@ export function registerPlayer(
   return player;
 }
 
+export function updatePlayer(
+  tournamentId: string,
+  playerId: string,
+  data: { name?: string; teamId?: string; avatar?: string }
+): Player | { error: string } {
+  const tournament = tournaments.get(tournamentId);
+  if (!tournament || tournament.status !== "registration") {
+    return { error: "Campeonato fechado ou não encontrado" };
+  }
+
+  const player = tournament.players.find((p) => p.id === playerId);
+  if (!player) {
+    return { error: "Jogador não encontrado" };
+  }
+
+  if (data.name !== undefined) {
+    const trimmed = data.name.trim();
+    if (!trimmed) return { error: "Nome é obrigatório" };
+    player.name = trimmed;
+  }
+
+  if (data.teamId !== undefined) {
+    if (
+      data.teamId !== player.teamId &&
+      tournament.players.some(
+        (p) => p.id !== playerId && p.teamId === data.teamId
+      )
+    ) {
+      return { error: "Este time já foi escolhido por outro jogador" };
+    }
+    player.teamId = data.teamId;
+  }
+
+  if (data.avatar !== undefined) {
+    player.avatar = data.avatar || undefined;
+  }
+
+  return player;
+}
+
 export function getTakenTeamIds(tournamentId: string): string[] {
   const tournament = tournaments.get(tournamentId);
   if (!tournament) return [];
