@@ -124,6 +124,36 @@ export const NATIONAL_TEAMS: Team[] = [
     rating: "81.0",
     flag: "https://flagcdn.com/w80/be.png",
   },
+  {
+    id: "usa",
+    name: "Estados Unidos",
+    rating: "GER 242",
+    flag: "https://flagcdn.com/w80/us.png",
+  },
+  {
+    id: "croatia",
+    name: "Croácia",
+    rating: "GER 240",
+    flag: "https://flagcdn.com/w80/hr.png",
+  },
+  {
+    id: "denmark",
+    name: "Dinamarca",
+    rating: "GER 239",
+    flag: "https://flagcdn.com/w80/dk.png",
+  },
+  {
+    id: "uruguay",
+    name: "Uruguai",
+    rating: "GER 238",
+    flag: "https://flagcdn.com/w80/uy.png",
+  },
+  {
+    id: "sweden",
+    name: "Suécia",
+    rating: "GER 236",
+    flag: "https://flagcdn.com/w80/se.png",
+  },
 ];
 
 export function getTeams(type: TeamType): Team[] {

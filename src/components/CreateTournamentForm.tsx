@@ -44,14 +44,14 @@ export function CreateTournamentForm({
             onClick={() => setTeamType("club")}
             icon="🏟️"
             label="Clubes"
-            subtitle="EA FC 26 - Top 10"
+            subtitle="EA FC 26 - Seleções"
           />
           <TeamTypeButton
             active={teamType === "national"}
             onClick={() => setTeamType("national")}
             icon="🌍"
             label="Seleções"
-            subtitle="EA FC 26 - Top 10"
+            subtitle="EA FC 26 - Seleções"
           />
         </div>
       </div>
