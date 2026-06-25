@@ -1,6 +1,7 @@
 "use client";
 
 import { Team } from "@/lib/types";
+import { formatTeamStats } from "@/lib/data";
 import { TeamFlag } from "./TeamFlag";
 
 interface TeamPickerProps {
@@ -44,7 +45,12 @@ export function TeamPicker({
             <TeamFlag team={team} size="lg" />
             <div className="min-w-0 flex-1">
               <p className="text-base font-semibold truncate">{team.name}</p>
-              <p className="text-sm text-gold/70">{team.rating}</p>
+              <p className="text-sm text-gold font-medium">{team.rating}</p>
+              {formatTeamStats(team) && (
+                <p className="text-xs text-white/45 mt-0.5">
+                  {formatTeamStats(team)}
+                </p>
+              )}
               {taken && (
                 <p className="text-sm text-red-400/80 mt-0.5">Já escolhido</p>
               )}

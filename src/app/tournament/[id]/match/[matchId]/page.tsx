@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Tournament, Match, Player, Team } from "@/lib/types";
-import { getTeams } from "@/lib/data";
+import { getTeams, formatTeamStats } from "@/lib/data";
 import { PlayerAvatar } from "@/components/MatchCard";
 import { TeamFlag } from "@/components/TeamFlag";
 import { getKnockoutRoundLabel, getKnockoutTotalRounds } from "@/lib/bracket";
@@ -212,10 +212,17 @@ function PlayerScoreCard({
         <div className="text-center">
           <p className="font-bold text-lg">{player.name}</p>
           {team && (
-            <p className="text-sm text-white/50 flex items-center justify-center gap-1.5">
-              <TeamFlag team={team} size="sm" />
-              {team.name}{" "}
-              <span className="text-gold/60">· {team.rating}</span>
+            <p className="text-sm text-white/50 flex flex-col items-center justify-center gap-0.5">
+              <span className="flex items-center gap-1.5">
+                <TeamFlag team={team} size="sm" />
+                {team.name}{" "}
+                <span className="text-gold/60">· {team.rating}</span>
+              </span>
+              {formatTeamStats(team) && (
+                <span className="text-xs text-white/40">
+                  {formatTeamStats(team)}
+                </span>
+              )}
             </p>
           )}
         </div>

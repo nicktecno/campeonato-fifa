@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { TeamType } from "@/lib/types";
-import { getTeams } from "@/lib/data";
+import { getTeams, formatTeamStats } from "@/lib/data";
 import { TeamFlag } from "./TeamFlag";
 import { DEFAULT_TOURNAMENT_NAME } from "@/lib/titles";
 
@@ -70,6 +70,12 @@ export function CreateTournamentForm({
               <TeamFlag team={team} size="xs" />
               {team.name}{" "}
               <span className="text-gold/70">· {team.rating}</span>
+              {formatTeamStats(team) && (
+                <span className="text-white/35 hidden sm:inline">
+                  {" "}
+                  ({formatTeamStats(team)})
+                </span>
+              )}
             </span>
           ))}
         </div>

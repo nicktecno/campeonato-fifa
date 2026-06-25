@@ -11,6 +11,9 @@ export interface Team {
   name: string;
   rating: string;
   flag: string;
+  attack?: number;
+  midfield?: number;
+  defense?: number;
 }
 
 export interface Player {
