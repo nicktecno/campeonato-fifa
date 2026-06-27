@@ -166,8 +166,9 @@ export default function TournamentPage() {
 
             {tournament.status !== "finished" && (
               <p className="text-center text-xs text-white/40 mt-4">
-                Clique em um confronto para registrar o placar · Posições vazias
-                podem receber um jogador da lista
+                Clique em um confronto para registrar o placar · Use{" "}
+                <span className="text-gold/70">Editar chave</span> no mata-mata
+                para ajustar confrontos
               </p>
             )}
           </>

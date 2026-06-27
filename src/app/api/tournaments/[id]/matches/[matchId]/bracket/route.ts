@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { setKnockoutMatchSlot } from "@/lib/store";
 
-export async function POST(
+export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; matchId: string }> }
 ) {
@@ -13,7 +13,10 @@ export async function POST(
     return NextResponse.json({ error: "Posição inválida" }, { status: 400 });
   }
 
-  if (typeof playerId !== "string" || !playerId) {
+  if (
+    playerId !== null &&
+    (typeof playerId !== "string" || !playerId)
+  ) {
     return NextResponse.json({ error: "Jogador inválido" }, { status: 400 });
   }
 

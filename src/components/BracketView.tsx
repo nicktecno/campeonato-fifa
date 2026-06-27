@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Tournament } from "@/lib/types";
 import { KnockoutMatchCard } from "./KnockoutMatchCard";
 import {
@@ -13,9 +14,48 @@ interface BracketViewProps {
 }
 
 export function BracketView({ tournament, onUpdate }: BracketViewProps) {
+  const [editMode, setEditMode] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
+  const [regenerateError, setRegenerateError] = useState<string | null>(null);
+
   const knockoutMatches = tournament.matches.filter(
     (m) => m.phase === "knockout"
   );
+
+  const canEdit =
+    tournament.status === "knockout" || tournament.status === "finished";
+
+  const handleRegenerate = async () => {
+    if (
+      !confirm(
+        "Regerar a chave pela classificação dos grupos? Os confrontos atuais do mata-mata serão substituídos."
+      )
+    ) {
+      return;
+    }
+
+    setRegenerating(true);
+    setRegenerateError(null);
+
+    try {
+      const res = await fetch(
+        `/api/tournaments/${tournament.id}/knockout/regenerate`,
+        { method: "POST" }
+      );
+
+      if (!res.ok) {
+        const data = await res.json();
+        setRegenerateError(data.error || "Erro ao regerar chave");
+        return;
+      }
+
+      onUpdate?.();
+    } catch {
+      setRegenerateError("Erro de conexão");
+    } finally {
+      setRegenerating(false);
+    }
+  };
 
   if (knockoutMatches.length === 0) {
     return (
@@ -51,6 +91,47 @@ export function BracketView({ tournament, onUpdate }: BracketViewProps) {
 
   return (
     <div className="relative overflow-x-auto pb-8">
+      {canEdit && (
+        <div className="px-6 pt-4 pb-2 flex flex-wrap items-center gap-3 border-b border-white/10">
+          <button
+            type="button"
+            onClick={() => setEditMode((v) => !v)}
+            className={`
+              px-4 py-2 rounded-lg text-sm font-medium transition-colors
+              ${
+                editMode
+                  ? "bg-gold text-pitch-dark"
+                  : "bg-white/10 text-white/80 hover:bg-white/15"
+              }
+            `}
+          >
+            {editMode ? "✓ Concluir edição" : "✏️ Editar chave"}
+          </button>
+
+          {editMode && (
+            <button
+              type="button"
+              onClick={handleRegenerate}
+              disabled={regenerating}
+              className="px-4 py-2 rounded-lg text-sm font-medium bg-white/10 text-white/80 hover:bg-white/15 disabled:opacity-50 transition-colors"
+            >
+              {regenerating ? "Regerando..." : "↺ Regerar pela classificação"}
+            </button>
+          )}
+
+          {editMode && (
+            <p className="text-xs text-white/45 flex-1 min-w-[200px]">
+              Altere jogadores em cada posição ou deixe vazio. Placares da
+              partida editada são resetados.
+            </p>
+          )}
+
+          {regenerateError && (
+            <p className="text-xs text-red-400">{regenerateError}</p>
+          )}
+        </div>
+      )}
+
       <div className="absolute inset-0 pitch-gradient pitch-lines opacity-30 rounded-2xl pointer-events-none" />
 
       <div className="relative flex gap-8 min-w-max p-6">
@@ -73,6 +154,7 @@ export function BracketView({ tournament, onUpdate }: BracketViewProps) {
                     key={match.id}
                     tournament={tournament}
                     match={match}
+                    editMode={editMode}
                     onUpdate={() => onUpdate?.()}
                   />
                 ))}
@@ -81,7 +163,7 @@ export function BracketView({ tournament, onUpdate }: BracketViewProps) {
           );
         })}
 
-        {champion && (
+        {champion && !editMode && (
           <div className="flex flex-col justify-center items-center min-w-[200px]">
             <div className="text-gold text-4xl mb-2">🏆</div>
             <h3 className="text-gold font-bold text-lg uppercase tracking-wider mb-2">
