@@ -83,7 +83,7 @@ async function main() {
     a.name.localeCompare(b.name, "pt-BR")
   );
 
-  tournament.groups = createGroups(sortedPlayers);
+  tournament.groups = createGroups(sortedPlayers, tournament.id);
   const groupMatches = generateGroupMatches(tournament.groups);
 
   for (const m of groupMatches) {
@@ -101,7 +101,8 @@ async function main() {
     const { matches: knockoutMatches } = seedKnockoutFromGroups(
       tournament.groups,
       tournament.matches,
-      tournament.players
+      tournament.players,
+      tournament.id
     );
     tournament.matches = [...tournament.matches, ...knockoutMatches];
     tournament.status = "knockout";

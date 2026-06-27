@@ -7,9 +7,10 @@ import {
 } from "./groups";
 import { isDbEnabled } from "./db";
 import { getTakenTeamIds as getActiveTakenTeamIds } from "./player-status";
+import { migrateTournamentIds } from "./tournament-migrate";
 import {
   dbGetTournament,
-  dbGetAllTournaments,
+  dbListTournamentIds,
   dbSaveTournament,
   dbDeleteTournament,
   dbUpdatePlayer,
@@ -125,7 +126,8 @@ function advanceToKnockout(tournament: Tournament): void {
   const { matches: knockoutMatches } = seedKnockoutFromGroups(
     tournament.groups,
     tournament.matches,
-    tournament.players
+    tournament.players,
+    tournament.id
   );
   tournament.matches = [...tournament.matches, ...knockoutMatches];
   tournament.status = "knockout";
@@ -169,6 +171,14 @@ async function persist(t: Tournament): Promise<void> {
   }
 }
 
+async function safePersist(t: Tournament): Promise<void> {
+  try {
+    await persist(t);
+  } catch (error) {
+    console.error(`Failed to persist tournament ${t.id}:`, error);
+  }
+}
+
 function isTournamentDataMissing(tournament: Tournament): boolean {
   if (tournament.status === "registration") return false;
   if (tournament.players.length < 4) return false;
@@ -190,7 +200,7 @@ function repairTournamentData(tournament: Tournament): boolean {
     a.name.localeCompare(b.name, "pt-BR")
   );
 
-  tournament.groups = createGroups(sortedPlayers);
+  tournament.groups = createGroups(sortedPlayers, tournament.id);
   const groupMatches = generateGroupMatches(tournament.groups);
 
   if (
@@ -206,7 +216,8 @@ function repairTournamentData(tournament: Tournament): boolean {
     const { matches: knockoutMatches } = seedKnockoutFromGroups(
       tournament.groups,
       tournament.matches,
-      tournament.players
+      tournament.players,
+      tournament.id
     );
     tournament.matches = [...tournament.matches, ...knockoutMatches];
     tournament.status = "knockout";
@@ -224,15 +235,18 @@ async function load(id: string): Promise<Tournament | undefined> {
   if (isDbEnabled()) {
     const t = await dbGetTournament(id);
     if (!t) return undefined;
-    if (repairTournamentData(t)) {
-      await persist(t);
-    }
+    let dirty = false;
+    if (migrateTournamentIds(t)) dirty = true;
+    if (repairTournamentData(t)) dirty = true;
+    if (dirty) await safePersist(t);
     return t;
   }
   const t = memoryGet(id);
-  if (t && repairTournamentData(t)) {
-    memorySave(t);
-  }
+  if (!t) return undefined;
+  let dirty = false;
+  if (migrateTournamentIds(t)) dirty = true;
+  if (repairTournamentData(t)) dirty = true;
+  if (dirty) memorySave(t);
   return t;
 }
 
@@ -348,7 +362,7 @@ export async function startTournament(
   if (!tournament || tournament.status !== "registration") return null;
   if (tournament.players.length < 4) return null;
 
-  const groups = createGroups(tournament.players);
+  const groups = createGroups(tournament.players, tournament.id);
   const groupMatches = generateGroupMatches(groups);
 
   tournament.groups = groups;
@@ -367,7 +381,13 @@ export async function getTournament(
 
 export async function getAllTournaments(): Promise<Tournament[]> {
   if (isDbEnabled()) {
-    return dbGetAllTournaments();
+    const ids = await dbListTournamentIds();
+    const results: Tournament[] = [];
+    for (const id of ids) {
+      const t = await load(id);
+      if (t) results.push(t);
+    }
+    return results;
   }
   return Array.from(tournaments.values()).sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()

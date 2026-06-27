@@ -17,14 +17,15 @@ function nextPowerOfTwo(n: number): number {
 
 export function generateKnockoutBracket(
   players: Player[],
-  options?: { seeded?: boolean }
+  options: { seeded?: boolean; tournamentId: string }
 ): Match[] {
-  const ordered = options?.seeded ? players : shuffle(players);
+  const ordered = options.seeded ? players : shuffle(players);
   const bracketSize = nextPowerOfTwo(ordered.length);
   const totalRounds = Math.log2(bracketSize);
   const matches: Match[] = [];
   const firstRoundCount = bracketSize / 2;
   const used = new Set<number>();
+  const prefix = `${options.tournamentId}-`;
 
   for (let i = 0; i < firstRoundCount; i++) {
     let p1: Player | null = null;
@@ -53,7 +54,7 @@ export function generateKnockoutBracket(
     }
 
     matches.push({
-      id: `ko-r0-m${i}`,
+      id: `${prefix}ko-r0-m${i}`,
       phase: "knockout",
       round: 0,
       position: i,
@@ -71,7 +72,7 @@ export function generateKnockoutBracket(
     const matchesInRound = bracketSize / Math.pow(2, round + 1);
     for (let i = 0; i < matchesInRound; i++) {
       matches.push({
-        id: `ko-r${round}-m${i}`,
+        id: `${prefix}ko-r${round}-m${i}`,
         phase: "knockout",
         round,
         position: i,
@@ -82,7 +83,7 @@ export function generateKnockoutBracket(
         winnerId: null,
         nextMatchId:
           round < totalRounds - 1
-            ? `ko-r${round + 1}-m${Math.floor(i / 2)}`
+            ? `${prefix}ko-r${round + 1}-m${Math.floor(i / 2)}`
             : null,
         nextSlot:
           round < totalRounds - 1
@@ -95,16 +96,16 @@ export function generateKnockoutBracket(
   for (let i = 0; i < firstRoundCount; i++) {
     const nextRound = 1;
     const nextPos = Math.floor(i / 2);
-    matches[i].nextMatchId = `ko-r${nextRound}-m${nextPos}`;
+    matches[i].nextMatchId = `${prefix}ko-r${nextRound}-m${nextPos}`;
     matches[i].nextSlot = (i % 2 === 0 ? 1 : 2) as 1 | 2;
   }
 
   for (let round = 1; round < totalRounds - 1; round++) {
     const matchesInRound = bracketSize / Math.pow(2, round + 1);
     for (let i = 0; i < matchesInRound; i++) {
-      const match = matches.find((m) => m.id === `ko-r${round}-m${i}`);
+      const match = matches.find((m) => m.id === `${prefix}ko-r${round}-m${i}`);
       if (match) {
-        match.nextMatchId = `ko-r${round + 1}-m${Math.floor(i / 2)}`;
+        match.nextMatchId = `${prefix}ko-r${round + 1}-m${Math.floor(i / 2)}`;
         match.nextSlot = (i % 2 === 0 ? 1 : 2) as 1 | 2;
       }
     }

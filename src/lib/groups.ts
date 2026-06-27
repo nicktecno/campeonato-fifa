@@ -12,14 +12,15 @@ function shuffle<T>(array: T[]): T[] {
 
 const GROUP_NAMES = ["A", "B", "C", "D", "E", "F", "G", "H"];
 
-export function createGroups(players: Player[]): Group[] {
+export function createGroups(players: Player[], tournamentId: string): Group[] {
   const shuffled = shuffle(players);
   const groupCount = Math.max(2, Math.ceil(shuffled.length / 4));
   const groups: Group[] = [];
 
   for (let i = 0; i < groupCount; i++) {
+    const slug = GROUP_NAMES[i].toLowerCase();
     groups.push({
-      id: `group-${GROUP_NAMES[i].toLowerCase()}`,
+      id: `${tournamentId}-group-${slug}`,
       name: `Grupo ${GROUP_NAMES[i]}`,
       playerIds: [],
     });
@@ -164,7 +165,8 @@ export function getQualifiedPlayers(
 export function seedKnockoutFromGroups(
   groups: Group[],
   matches: Match[],
-  allPlayers: Player[]
+  allPlayers: Player[],
+  tournamentId: string
 ): { playerIds: string[]; matches: Match[] } {
   const globalStandings = calculateGlobalStandings(groups, matches);
 
@@ -174,6 +176,7 @@ export function seedKnockoutFromGroups(
 
   const knockoutMatches = generateKnockoutBracket(orderedPlayers, {
     seeded: true,
+    tournamentId,
   });
 
   return {

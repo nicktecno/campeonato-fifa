@@ -90,6 +90,16 @@ export async function dbGetTournament(id: string): Promise<Tournament | null> {
   };
 }
 
+export async function dbListTournamentIds(): Promise<string[]> {
+  const sql = getDb();
+  if (!sql) return [];
+
+  const rows = await sql`
+    SELECT id FROM tournaments ORDER BY created_at DESC
+  `;
+  return rows.map((row) => row.id as string);
+}
+
 export async function dbGetAllTournaments(): Promise<Tournament[]> {
   const sql = getDb();
   if (!sql) return [];
@@ -150,73 +160,82 @@ export async function dbSaveTournament(tournament: Tournament): Promise<void> {
   const sql = getDb();
   if (!sql) return;
 
-  await sql`
-    INSERT INTO tournaments (id, name, team_type, status, created_at)
-    VALUES (
-      ${tournament.id},
-      ${tournament.name},
-      ${tournament.teamType},
-      ${tournament.status},
-      ${tournament.createdAt}
-    )
-    ON CONFLICT (id) DO UPDATE SET
-      name = EXCLUDED.name,
-      team_type = EXCLUDED.team_type,
-      status = EXCLUDED.status
-  `;
-
-  await sql`DELETE FROM matches WHERE tournament_id = ${tournament.id}`;
-  await sql`DELETE FROM groups WHERE tournament_id = ${tournament.id}`;
-  await sql`DELETE FROM players WHERE tournament_id = ${tournament.id}`;
+  const statements = [
+    sql`
+      INSERT INTO tournaments (id, name, team_type, status, created_at)
+      VALUES (
+        ${tournament.id},
+        ${tournament.name},
+        ${tournament.teamType},
+        ${tournament.status},
+        ${tournament.createdAt}
+      )
+      ON CONFLICT (id) DO UPDATE SET
+        name = EXCLUDED.name,
+        team_type = EXCLUDED.team_type,
+        status = EXCLUDED.status
+    `,
+    sql`DELETE FROM matches WHERE tournament_id = ${tournament.id}`,
+    sql`DELETE FROM groups WHERE tournament_id = ${tournament.id}`,
+    sql`DELETE FROM players WHERE tournament_id = ${tournament.id}`,
+  ];
 
   for (const player of tournament.players) {
-    await sql`
-      INSERT INTO players (id, tournament_id, name, team_id, avatar)
-      VALUES (
-        ${player.id},
-        ${tournament.id},
-        ${player.name},
-        ${player.teamId},
-        ${player.avatar ?? null}
-      )
-    `;
+    statements.push(
+      sql`
+        INSERT INTO players (id, tournament_id, name, team_id, avatar)
+        VALUES (
+          ${player.id},
+          ${tournament.id},
+          ${player.name},
+          ${player.teamId},
+          ${player.avatar ?? null}
+        )
+      `
+    );
   }
 
   for (const group of tournament.groups) {
-    await sql`
-      INSERT INTO groups (id, tournament_id, name, player_ids)
-      VALUES (
-        ${group.id},
-        ${tournament.id},
-        ${group.name},
-        ${JSON.stringify(group.playerIds)}::jsonb
-      )
-    `;
+    statements.push(
+      sql`
+        INSERT INTO groups (id, tournament_id, name, player_ids)
+        VALUES (
+          ${group.id},
+          ${tournament.id},
+          ${group.name},
+          ${JSON.stringify(group.playerIds)}::jsonb
+        )
+      `
+    );
   }
 
   for (const match of tournament.matches) {
-    await sql`
-      INSERT INTO matches (
-        id, tournament_id, phase, group_id, round, position,
-        player1_id, player2_id, score1, score2,
-        winner_id, next_match_id, next_slot
-      ) VALUES (
-        ${match.id},
-        ${tournament.id},
-        ${match.phase},
-        ${match.groupId ?? null},
-        ${match.round},
-        ${match.position},
-        ${match.player1Id},
-        ${match.player2Id},
-        ${match.score1},
-        ${match.score2},
-        ${match.winnerId},
-        ${match.nextMatchId},
-        ${match.nextSlot}
-      )
-    `;
+    statements.push(
+      sql`
+        INSERT INTO matches (
+          id, tournament_id, phase, group_id, round, position,
+          player1_id, player2_id, score1, score2,
+          winner_id, next_match_id, next_slot
+        ) VALUES (
+          ${match.id},
+          ${tournament.id},
+          ${match.phase},
+          ${match.groupId ?? null},
+          ${match.round},
+          ${match.position},
+          ${match.player1Id},
+          ${match.player2Id},
+          ${match.score1},
+          ${match.score2},
+          ${match.winnerId},
+          ${match.nextMatchId},
+          ${match.nextSlot}
+        )
+      `
+    );
   }
+
+  await sql.transaction(statements);
 }
 
 export async function dbDeleteTournament(id: string): Promise<boolean> {

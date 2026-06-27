@@ -22,7 +22,8 @@ export default function TournamentPage() {
   const fetchTournament = useCallback(() => {
     fetch(`/api/tournaments/${id}`)
       .then((res) => {
-        if (!res.ok) throw new Error("Campeonato não encontrado");
+        if (res.status === 404) throw new Error("Campeonato não encontrado");
+        if (!res.ok) throw new Error("Erro ao carregar campeonato");
         return res.json();
       })
       .then((data: Tournament) => {
