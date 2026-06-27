@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Tournament, Player } from "@/lib/types";
-import { PlayerForm, getTakenTeamIdsExcluding } from "@/components/PlayerForm";
+import { PlayerForm } from "@/components/PlayerForm";
 import { formatTournamentTitle } from "@/lib/titles";
+import { getTakenTeamIds, isPlayerEliminated } from "@/lib/player-status";
 
 export default function EditPlayerPage() {
   const params = useParams();
@@ -84,27 +85,13 @@ export default function EditPlayerPage() {
     );
   }
 
-  if (tournament.status !== "registration") {
-    return (
-      <div className="min-h-screen pitch-gradient flex items-center justify-center px-4">
-        <div className="text-center max-w-md">
-          <span className="text-5xl">🔒</span>
-          <h2 className="text-xl font-bold text-gold mt-4">
-            Edição não permitida
-          </h2>
-          <p className="text-white/60 mt-2">
-            O campeonato já foi iniciado. Jogadores não podem mais ser editados.
-          </p>
-          <Link
-            href={`/tournament/${tournamentId}`}
-            className="inline-block mt-6 text-gold hover:underline"
-          >
-            Ver campeonato →
-          </Link>
-        </div>
-      </div>
-    );
-  }
+  const isMidTournament = tournament.status !== "registration";
+  const eliminated = isMidTournament && isPlayerEliminated(tournament, playerId);
+  const takenTeamIds = getTakenTeamIds(tournament, playerId);
+
+  const teamPickerHint = isMidTournament
+    ? "Só times ainda não usados ou de jogadores eliminados no campeonato."
+    : "Cada time só pode ser usado uma vez neste campeonato.";
 
   return (
     <main className="min-h-screen pitch-gradient">
@@ -124,6 +111,13 @@ export default function EditPlayerPage() {
           <p className="text-white/60 text-base mt-1">
             {formatTournamentTitle(tournament.name)}
           </p>
+          {isMidTournament && (
+            <p className="text-sm text-white/45 mt-2">
+              {eliminated
+                ? "Jogador eliminado — pode trocar para times disponíveis."
+                : "Campeonato em andamento — troca de time com restrições."}
+            </p>
+          )}
         </header>
 
         <div className="bg-black/40 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
@@ -132,10 +126,8 @@ export default function EditPlayerPage() {
             initialName={player.name}
             initialTeamId={player.teamId}
             initialAvatar={player.avatar}
-            takenTeamIds={getTakenTeamIdsExcluding(
-              tournament.players,
-              playerId
-            )}
+            takenTeamIds={takenTeamIds}
+            teamPickerHint={teamPickerHint}
             submitLabel="Salvar alterações"
             loadingLabel="Salvando..."
             onSubmit={handleSubmit}

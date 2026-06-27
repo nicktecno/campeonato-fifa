@@ -6,6 +6,7 @@ import {
   seedKnockoutFromGroups,
 } from "./groups";
 import { isDbEnabled } from "./db";
+import { getTakenTeamIds as getActiveTakenTeamIds } from "./player-status";
 import {
   dbGetTournament,
   dbGetAllTournaments,
@@ -225,8 +226,8 @@ export async function updatePlayer(
   data: { name?: string; teamId?: string; avatar?: string }
 ): Promise<Player | { error: string }> {
   const tournament = await load(tournamentId);
-  if (!tournament || tournament.status !== "registration") {
-    return { error: "Campeonato fechado ou não encontrado" };
+  if (!tournament) {
+    return { error: "Campeonato não encontrado" };
   }
 
   const player = tournament.players.find((p) => p.id === playerId);
@@ -241,13 +242,11 @@ export async function updatePlayer(
   }
 
   if (data.teamId !== undefined) {
-    if (
-      data.teamId !== player.teamId &&
-      tournament.players.some(
-        (p) => p.id !== playerId && p.teamId === data.teamId
-      )
-    ) {
-      return { error: "Este time já foi escolhido por outro jogador" };
+    const taken = getActiveTakenTeamIds(tournament, playerId);
+    if (data.teamId !== player.teamId && taken.includes(data.teamId)) {
+      return {
+        error: "Este time já está em uso por outro jogador ativo no campeonato",
+      };
     }
     player.teamId = data.teamId;
   }
@@ -265,7 +264,7 @@ export async function getTakenTeamIds(
 ): Promise<string[]> {
   const tournament = await load(tournamentId);
   if (!tournament) return [];
-  return tournament.players.map((p) => p.teamId);
+  return getActiveTakenTeamIds(tournament);
 }
 
 export async function startTournament(

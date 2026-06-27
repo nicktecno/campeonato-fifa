@@ -9,6 +9,7 @@ import { AvatarUpload } from "./AvatarUpload";
 interface PlayerFormProps {
   teamType: TeamType;
   takenTeamIds?: string[];
+  teamPickerHint?: string;
   initialName?: string;
   initialTeamId?: string;
   initialAvatar?: string;
@@ -25,6 +26,7 @@ interface PlayerFormProps {
 export function PlayerForm({
   teamType,
   takenTeamIds = [],
+  teamPickerHint = "Cada time só pode ser usado uma vez neste campeonato.",
   initialName = "",
   initialTeamId = "",
   initialAvatar,
@@ -83,9 +85,7 @@ export function PlayerForm({
         <label className="block text-base font-medium text-white/80 mb-2">
           Time
         </label>
-        <p className="text-sm text-white/50 mb-3">
-          Cada time só pode ser usado uma vez neste campeonato.
-        </p>
+        <p className="text-sm text-white/50 mb-3">{teamPickerHint}</p>
         <TeamPicker
           teams={teams}
           value={teamId}

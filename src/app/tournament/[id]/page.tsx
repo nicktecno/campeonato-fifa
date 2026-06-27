@@ -6,6 +6,7 @@ import { Tournament } from "@/lib/types";
 import { TournamentLobby } from "@/components/TournamentLobby";
 import { GroupStageView } from "@/components/GroupStageView";
 import { BracketView } from "@/components/BracketView";
+import { TournamentPlayersPanel } from "@/components/TournamentPlayersPanel";
 import Link from "next/link";
 import { formatTournamentTitle } from "@/lib/titles";
 
@@ -135,6 +136,8 @@ export default function TournamentPage() {
           tournament.status === "knockout" ||
           tournament.status === "finished") && (
           <>
+            <TournamentPlayersPanel tournament={tournament} />
+
             <div className="flex gap-2 mb-6">
               <TabButton
                 active={activeTab === "groups"}
