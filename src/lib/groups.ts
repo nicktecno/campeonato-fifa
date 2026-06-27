@@ -140,22 +140,25 @@ export function isGroupStageComplete(
   );
 }
 
+export function calculateGlobalStandings(
+  groups: Group[],
+  matches: Match[]
+): GroupStanding[] {
+  const all = groups.flatMap((group) => calculateStandings(group, matches));
+  return all.sort((a, b) => {
+    if (b.points !== a.points) return b.points - a.points;
+    if (b.goalDifference !== a.goalDifference)
+      return b.goalDifference - a.goalDifference;
+    return b.goalsFor - a.goalsFor;
+  });
+}
+
 export function getQualifiedPlayers(
   groups: Group[],
-  matches: Match[],
-  advancePerGroup = 2
+  matches: Match[]
 ): Player[] {
-  const qualifiedIds: string[] = [];
-
-  for (const group of groups) {
-    const standings = calculateStandings(group, matches);
-    const top = standings.slice(0, advancePerGroup);
-    qualifiedIds.push(...top.map((s) => s.playerId));
-  }
-
-  return qualifiedIds.map(
-    (id) => ({ id }) as Player
-  );
+  const standings = calculateGlobalStandings(groups, matches);
+  return standings.map(({ playerId }) => ({ id: playerId }) as Player);
 }
 
 export function seedKnockoutFromGroups(
@@ -163,32 +166,18 @@ export function seedKnockoutFromGroups(
   matches: Match[],
   allPlayers: Player[]
 ): { playerIds: string[]; matches: Match[] } {
-  const qualifiedByGroup = groups.map((group) => {
-    const standings = calculateStandings(group, matches);
-    return standings.slice(0, 2).map((s) => s.playerId);
-  });
+  const globalStandings = calculateGlobalStandings(groups, matches);
 
-  const seededIds: string[] = [];
-
-  for (let i = 0; i < qualifiedByGroup.length; i += 2) {
-    const groupA = qualifiedByGroup[i];
-    const groupB = qualifiedByGroup[i + 1];
-
-    if (groupB) {
-      if (groupA[0]) seededIds.push(groupA[0]);
-      if (groupB[1]) seededIds.push(groupB[1]);
-      if (groupB[0]) seededIds.push(groupB[0]);
-      if (groupA[1]) seededIds.push(groupA[1]);
-    } else {
-      seededIds.push(...groupA.filter(Boolean));
-    }
-  }
-
-  const qualifiedPlayers = seededIds
-    .map((id) => allPlayers.find((p) => p.id === id))
+  const orderedPlayers = globalStandings
+    .map((s) => allPlayers.find((p) => p.id === s.playerId))
     .filter((p): p is Player => !!p);
 
-  const knockoutMatches = generateKnockoutBracket(qualifiedPlayers);
+  const knockoutMatches = generateKnockoutBracket(orderedPlayers, {
+    seeded: true,
+  });
 
-  return { playerIds: seededIds, matches: knockoutMatches };
+  return {
+    playerIds: orderedPlayers.map((p) => p.id),
+    matches: knockoutMatches,
+  };
 }

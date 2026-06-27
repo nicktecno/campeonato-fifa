@@ -44,6 +44,21 @@ function advanceToKnockout(tournament: Tournament): void {
   );
   tournament.matches = [...tournament.matches, ...knockoutMatches];
   tournament.status = "knockout";
+
+  for (const match of knockoutMatches) {
+    if (match.round !== 0) continue;
+
+    const hasP1 = !!match.player1Id;
+    const hasP2 = !!match.player2Id;
+
+    if (hasP1 && !hasP2) {
+      match.winnerId = match.player1Id;
+      propagateWinner(tournament, match, match.player1Id);
+    } else if (!hasP1 && hasP2) {
+      match.winnerId = match.player2Id;
+      propagateWinner(tournament, match, match.player2Id);
+    }
+  }
 }
 
 function propagateWinner(

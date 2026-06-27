@@ -15,16 +15,43 @@ function nextPowerOfTwo(n: number): number {
   return p;
 }
 
-export function generateKnockoutBracket(players: Player[]): Match[] {
-  const shuffled = shuffle(players);
-  const bracketSize = nextPowerOfTwo(shuffled.length);
+export function generateKnockoutBracket(
+  players: Player[],
+  options?: { seeded?: boolean }
+): Match[] {
+  const ordered = options?.seeded ? players : shuffle(players);
+  const bracketSize = nextPowerOfTwo(ordered.length);
   const totalRounds = Math.log2(bracketSize);
   const matches: Match[] = [];
-
   const firstRoundCount = bracketSize / 2;
+  const used = new Set<number>();
+
   for (let i = 0; i < firstRoundCount; i++) {
-    const p1 = shuffled[i * 2] ?? null;
-    const p2 = shuffled[i * 2 + 1] ?? null;
+    let p1: Player | null = null;
+    let p2: Player | null = null;
+
+    if (options?.seeded) {
+      const top = i;
+      const bottom = ordered.length - 1 - i;
+
+      if (top > bottom || used.has(top)) {
+        p1 = null;
+        p2 = null;
+      } else if (top === bottom) {
+        p1 = ordered[top] ?? null;
+        p2 = null;
+        used.add(top);
+      } else {
+        p1 = ordered[top] ?? null;
+        p2 = ordered[bottom] ?? null;
+        used.add(top);
+        used.add(bottom);
+      }
+    } else {
+      p1 = ordered[i * 2] ?? null;
+      p2 = ordered[i * 2 + 1] ?? null;
+    }
+
     matches.push({
       id: `ko-r0-m${i}`,
       phase: "knockout",

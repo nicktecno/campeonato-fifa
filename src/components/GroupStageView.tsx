@@ -2,7 +2,7 @@
 
 import { Tournament } from "@/lib/types";
 import { MatchCard } from "./MatchCard";
-import { calculateStandings } from "@/lib/groups";
+import { calculateStandings, calculateGlobalStandings } from "@/lib/groups";
 import { getTeams } from "@/lib/data";
 import { PlayerAvatar } from "./MatchCard";
 import { TeamFlag } from "./TeamFlag";
@@ -14,9 +14,91 @@ interface GroupStageViewProps {
 export function GroupStageView({ tournament }: GroupStageViewProps) {
   const groupMatches = tournament.matches.filter((m) => m.phase === "group");
   const teams = getTeams(tournament.teamType);
+  const globalStandings = calculateGlobalStandings(
+    tournament.groups,
+    tournament.matches
+  );
+  const seedByPlayerId = new Map(
+    globalStandings.map((s, i) => [s.playerId, i + 1])
+  );
 
   return (
     <div className="space-y-8 p-6">
+      <div className="bg-black/30 border border-white/10 rounded-2xl overflow-hidden">
+        <div className="bg-gold/10 border-b border-gold/20 px-4 py-3">
+          <h3 className="font-bold text-gold text-lg">
+            Classificação Geral — Mata-mata
+          </h3>
+          <p className="text-xs text-white/50 mt-1">
+            Todos se classificam. O chaveamento do mata-mata segue esta ordem
+            (1º x último, 2º x penúltimo…).
+          </p>
+        </div>
+        <div className="p-4 overflow-x-auto">
+          <table className="w-full text-sm min-w-[480px]">
+            <thead>
+              <tr className="text-white/40 text-xs uppercase">
+                <th className="text-left pb-2">Seed</th>
+                <th className="text-left pb-2">Jogador</th>
+                <th className="text-center pb-2">J</th>
+                <th className="text-center pb-2">V</th>
+                <th className="text-center pb-2">E</th>
+                <th className="text-center pb-2">D</th>
+                <th className="text-center pb-2">SG</th>
+                <th className="text-center pb-2 font-bold text-gold">Pts</th>
+              </tr>
+            </thead>
+            <tbody>
+              {globalStandings.map((s, i) => {
+                const player = tournament.players.find(
+                  (p) => p.id === s.playerId
+                );
+                const team = player
+                  ? teams.find((t) => t.id === player.teamId)
+                  : null;
+
+                return (
+                  <tr key={s.playerId} className="border-t border-white/5">
+                    <td className="py-2 text-gold font-bold">{i + 1}º</td>
+                    <td className="py-2">
+                      <div className="flex items-center gap-2">
+                        <PlayerAvatar
+                          player={player ?? null}
+                          team={team ?? undefined}
+                          size="sm"
+                        />
+                        <div className="min-w-0">
+                          <span className="truncate font-medium block">
+                            {player?.name}
+                          </span>
+                          {team && (
+                            <span className="flex items-center gap-1 text-[10px] text-white/40">
+                              <TeamFlag team={team} size="xs" />
+                              {team.name}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="text-center py-2">{s.played}</td>
+                    <td className="text-center py-2">{s.wins}</td>
+                    <td className="text-center py-2">{s.draws}</td>
+                    <td className="text-center py-2">{s.losses}</td>
+                    <td className="text-center py-2">
+                      {s.goalDifference > 0 ? "+" : ""}
+                      {s.goalDifference}
+                    </td>
+                    <td className="text-center py-2 font-bold text-gold">
+                      {s.points}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       <div className="grid gap-6 lg:grid-cols-2">
         {tournament.groups.map((group) => {
           const standings = calculateStandings(group, tournament.matches);
@@ -57,13 +139,10 @@ export function GroupStageView({ tournament }: GroupStageViewProps) {
                       const team = player
                         ? teams.find((t) => t.id === player.teamId)
                         : null;
-                      const qualified = i < 2;
+                      const seed = seedByPlayerId.get(s.playerId);
 
                       return (
-                        <tr
-                          key={s.playerId}
-                          className={`border-t border-white/5 ${qualified ? "bg-gold/5" : ""}`}
-                        >
+                        <tr key={s.playerId} className="border-t border-white/5">
                           <td className="py-2 text-white/40">{i + 1}</td>
                           <td className="py-2">
                             <div className="flex items-center gap-2">
@@ -83,9 +162,9 @@ export function GroupStageView({ tournament }: GroupStageViewProps) {
                                   </span>
                                 )}
                               </div>
-                              {qualified && (
-                                <span className="text-[10px] bg-gold/20 text-gold px-1.5 py-0.5 rounded">
-                                  ✓
+                              {seed && (
+                                <span className="text-[10px] bg-gold/20 text-gold px-1.5 py-0.5 rounded shrink-0">
+                                  {seed}º
                                 </span>
                               )}
                             </div>
