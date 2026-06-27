@@ -1,7 +1,7 @@
 "use client";
 
 import { Tournament } from "@/lib/types";
-import { MatchCard } from "./MatchCard";
+import { KnockoutMatchCard } from "./KnockoutMatchCard";
 import {
   getKnockoutRoundLabel,
   getKnockoutTotalRounds,
@@ -9,9 +9,10 @@ import {
 
 interface BracketViewProps {
   tournament: Tournament;
+  onUpdate?: () => void;
 }
 
-export function BracketView({ tournament }: BracketViewProps) {
+export function BracketView({ tournament, onUpdate }: BracketViewProps) {
   const knockoutMatches = tournament.matches.filter(
     (m) => m.phase === "knockout"
   );
@@ -68,12 +69,11 @@ export function BracketView({ tournament }: BracketViewProps) {
                 style={{ gap: `${Math.max(gap, 16)}px` }}
               >
                 {matches.map((match) => (
-                  <MatchCard
+                  <KnockoutMatchCard
                     key={match.id}
+                    tournament={tournament}
                     match={match}
-                    players={tournament.players}
-                    teamType={tournament.teamType}
-                    tournamentId={tournament.id}
+                    onUpdate={() => onUpdate?.()}
                   />
                 ))}
               </div>

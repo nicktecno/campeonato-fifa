@@ -153,13 +153,17 @@ export default function TournamentPage() {
               {activeTab === "groups" ? (
                 <GroupStageView tournament={tournament} />
               ) : (
-                <BracketView tournament={tournament} />
+                <BracketView
+                  tournament={tournament}
+                  onUpdate={fetchTournament}
+                />
               )}
             </div>
 
             {tournament.status !== "finished" && (
               <p className="text-center text-xs text-white/40 mt-4">
-                Clique em um confronto para registrar o placar
+                Clique em um confronto para registrar o placar · Posições vazias
+                podem receber um jogador da lista
               </p>
             )}
           </>

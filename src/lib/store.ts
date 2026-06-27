@@ -36,6 +36,89 @@ function memorySave(t: Tournament): void {
   tournaments.set(t.id, t);
 }
 
+function clearDownstreamFromMatch(tournament: Tournament, match: Match): void {
+  if (!match.nextMatchId || !match.nextSlot || !match.winnerId) return;
+
+  const nextMatch = tournament.matches.find((m) => m.id === match.nextMatchId);
+  if (!nextMatch) return;
+
+  const slot = match.nextSlot;
+  const currentInSlot = slot === 1 ? nextMatch.player1Id : nextMatch.player2Id;
+
+  if (currentInSlot !== match.winnerId) return;
+
+  if (slot === 1) nextMatch.player1Id = null;
+  else nextMatch.player2Id = null;
+
+  nextMatch.score1 = null;
+  nextMatch.score2 = null;
+  nextMatch.winnerId = null;
+
+  clearDownstreamFromMatch(tournament, nextMatch);
+}
+
+function applyByeIfNeeded(tournament: Tournament, match: Match): void {
+  const hasP1 = !!match.player1Id;
+  const hasP2 = !!match.player2Id;
+
+  if (hasP1 && !hasP2) {
+    match.winnerId = match.player1Id;
+    propagateWinner(tournament, match, match.player1Id);
+  } else if (!hasP1 && hasP2) {
+    match.winnerId = match.player2Id;
+    propagateWinner(tournament, match, match.player2Id);
+  } else if (hasP1 && hasP2) {
+    match.winnerId = null;
+  } else {
+    clearDownstreamFromMatch(tournament, match);
+    match.winnerId = null;
+    match.score1 = null;
+    match.score2 = null;
+  }
+}
+
+function removePlayerFromKnockoutMatch(
+  tournament: Tournament,
+  playerId: string,
+  exceptMatchId: string
+): void {
+  for (const m of tournament.matches) {
+    if (m.phase !== "knockout" || m.id === exceptMatchId) continue;
+
+    let removed = false;
+
+    if (m.player1Id === playerId) {
+      if (m.winnerId === playerId) clearDownstreamFromMatch(tournament, m);
+      m.player1Id = null;
+      removed = true;
+    }
+    if (m.player2Id === playerId) {
+      if (m.winnerId === playerId) clearDownstreamFromMatch(tournament, m);
+      m.player2Id = null;
+      removed = true;
+    }
+
+    if (removed) {
+      m.score1 = null;
+      m.score2 = null;
+      m.winnerId = null;
+      applyByeIfNeeded(tournament, m);
+    }
+  }
+}
+
+function syncTournamentFinishedStatus(tournament: Tournament): void {
+  const finalMatch = tournament.matches
+    .filter((m) => m.phase === "knockout")
+    .sort((a, b) => b.round - a.round)[0];
+
+  if (finalMatch?.winnerId) {
+    tournament.status = "finished";
+  } else if (tournament.status === "finished") {
+    tournament.status = "knockout";
+  }
+}
+
 function advanceToKnockout(tournament: Tournament): void {
   const { matches: knockoutMatches } = seedKnockoutFromGroups(
     tournament.groups,
@@ -47,17 +130,7 @@ function advanceToKnockout(tournament: Tournament): void {
 
   for (const match of knockoutMatches) {
     if (match.round !== 0) continue;
-
-    const hasP1 = !!match.player1Id;
-    const hasP2 = !!match.player2Id;
-
-    if (hasP1 && !hasP2) {
-      match.winnerId = match.player1Id;
-      propagateWinner(tournament, match, match.player1Id);
-    } else if (!hasP1 && hasP2) {
-      match.winnerId = match.player2Id;
-      propagateWinner(tournament, match, match.player2Id);
-    }
+    applyByeIfNeeded(tournament, match);
   }
 }
 
@@ -271,6 +344,56 @@ export async function updateMatchScore(
       }
     }
   }
+
+  await persist(tournament);
+  return tournament;
+}
+
+export async function assignPlayerToMatchSlot(
+  tournamentId: string,
+  matchId: string,
+  slot: 1 | 2,
+  playerId: string
+): Promise<Tournament | { error: string }> {
+  const tournament = await load(tournamentId);
+  if (!tournament) return { error: "Campeonato não encontrado" };
+
+  if (tournament.status !== "knockout" && tournament.status !== "finished") {
+    return { error: "Mata-mata ainda não iniciado" };
+  }
+
+  const match = tournament.matches.find((m) => m.id === matchId);
+  if (!match || match.phase !== "knockout") {
+    return { error: "Partida inválida" };
+  }
+
+  const currentSlotPlayer = slot === 1 ? match.player1Id : match.player2Id;
+  if (currentSlotPlayer) {
+    return { error: "Esta posição já está ocupada" };
+  }
+
+  const player = tournament.players.find((p) => p.id === playerId);
+  if (!player) return { error: "Jogador não encontrado" };
+
+  const otherId = slot === 1 ? match.player2Id : match.player1Id;
+  if (otherId === playerId) {
+    return { error: "Jogador já está nesta partida" };
+  }
+
+  removePlayerFromKnockoutMatch(tournament, playerId, matchId);
+
+  if (match.winnerId) {
+    clearDownstreamFromMatch(tournament, match);
+  }
+  match.winnerId = null;
+  match.score1 = null;
+  match.score2 = null;
+
+  if (slot === 1) match.player1Id = playerId;
+  else match.player2Id = playerId;
+
+  applyByeIfNeeded(tournament, match);
+  syncTournamentFinishedStatus(tournament);
 
   await persist(tournament);
   return tournament;

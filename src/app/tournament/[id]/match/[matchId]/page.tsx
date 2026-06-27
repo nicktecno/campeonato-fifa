@@ -7,6 +7,7 @@ import { getTeams, formatTeamStats } from "@/lib/data";
 import { PlayerAvatar } from "@/components/MatchCard";
 import { TeamFlag } from "@/components/TeamFlag";
 import { getKnockoutRoundLabel, getKnockoutTotalRounds } from "@/lib/bracket";
+import { MatchSlotAssign } from "@/components/MatchSlotAssign";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -101,7 +102,23 @@ export default function MatchPage() {
     roundLabel = getKnockoutRoundLabel(match.round, totalRounds);
   }
 
-  const canSave = isKnockout ? !isDraw : true;
+  const canSave = player1 && player2 && (isKnockout ? !isDraw : true);
+  const canAssign =
+    isKnockout && tournament.status === "knockout" && (!player1 || !player2);
+
+  const refreshTournament = () => {
+    fetch(`/api/tournaments/${tournamentId}`)
+      .then((res) => res.json())
+      .then((data: Tournament) => {
+        setTournament(data);
+        const m = data.matches.find((m) => m.id === matchId);
+        if (m) {
+          setMatch(m);
+          setScore1(m.score1 ?? 0);
+          setScore2(m.score2 ?? 0);
+        }
+      });
+  };
 
   return (
     <main className="min-h-screen pitch-gradient relative overflow-hidden">
@@ -126,6 +143,55 @@ export default function MatchPage() {
         </div>
 
         <div className="bg-black/50 backdrop-blur-md border border-white/10 rounded-3xl p-6 md:p-10">
+          {canAssign ? (
+            <div className="space-y-6">
+              <p className="text-center text-white/60 text-sm">
+                Esta posição na chave está vazia. Atribua um jogador da lista —
+                se ficar sozinho, ele classifica automaticamente.
+              </p>
+              <div className="grid gap-4 md:grid-cols-2">
+                {!player1 && (
+                  <div className="bg-black/30 border border-white/10 rounded-xl p-4">
+                    <p className="text-xs text-white/50 mb-2 uppercase tracking-wider">
+                      Jogador 1
+                    </p>
+                    <MatchSlotAssign
+                      tournament={tournament}
+                      match={match}
+                      slot={1}
+                      onAssigned={refreshTournament}
+                    />
+                  </div>
+                )}
+                {!player2 && (
+                  <div className="bg-black/30 border border-white/10 rounded-xl p-4">
+                    <p className="text-xs text-white/50 mb-2 uppercase tracking-wider">
+                      Jogador 2
+                    </p>
+                    <MatchSlotAssign
+                      tournament={tournament}
+                      match={match}
+                      slot={2}
+                      onAssigned={refreshTournament}
+                    />
+                  </div>
+                )}
+              </div>
+              {player1 && (
+                <div className="text-center pt-2">
+                  <p className="text-sm text-white/50 mb-1">Já na chave:</p>
+                  <p className="font-medium text-gold">{player1.name}</p>
+                </div>
+              )}
+              {player2 && (
+                <div className="text-center pt-2">
+                  <p className="text-sm text-white/50 mb-1">Já na chave:</p>
+                  <p className="font-medium text-gold">{player2.name}</p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <>
           <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 md:gap-8">
             <PlayerScoreCard
               player={player1}
@@ -165,6 +231,8 @@ export default function MatchPage() {
           >
             {saving ? "Salvando..." : "Confirmar Placar"}
           </button>
+            </>
+          )}
         </div>
       </div>
     </main>
