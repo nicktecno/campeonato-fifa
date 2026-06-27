@@ -106,6 +106,46 @@ export async function dbGetAllTournaments(): Promise<Tournament[]> {
   return tournaments;
 }
 
+export async function dbUpdatePlayer(
+  tournamentId: string,
+  playerId: string,
+  updates: {
+    name?: string;
+    teamId?: string;
+    avatar?: string | null;
+  }
+): Promise<boolean> {
+  const sql = getDb();
+  if (!sql) return false;
+
+  const rows = await sql`
+    SELECT id FROM players
+    WHERE id = ${playerId} AND tournament_id = ${tournamentId}
+  `;
+  if (!rows.length) return false;
+
+  if (updates.name !== undefined) {
+    await sql`
+      UPDATE players SET name = ${updates.name}
+      WHERE id = ${playerId} AND tournament_id = ${tournamentId}
+    `;
+  }
+  if (updates.teamId !== undefined) {
+    await sql`
+      UPDATE players SET team_id = ${updates.teamId}
+      WHERE id = ${playerId} AND tournament_id = ${tournamentId}
+    `;
+  }
+  if (updates.avatar !== undefined) {
+    await sql`
+      UPDATE players SET avatar = ${updates.avatar}
+      WHERE id = ${playerId} AND tournament_id = ${tournamentId}
+    `;
+  }
+
+  return true;
+}
+
 export async function dbSaveTournament(tournament: Tournament): Promise<void> {
   const sql = getDb();
   if (!sql) return;
@@ -125,9 +165,9 @@ export async function dbSaveTournament(tournament: Tournament): Promise<void> {
       status = EXCLUDED.status
   `;
 
-  await sql`DELETE FROM players WHERE tournament_id = ${tournament.id}`;
-  await sql`DELETE FROM groups WHERE tournament_id = ${tournament.id}`;
   await sql`DELETE FROM matches WHERE tournament_id = ${tournament.id}`;
+  await sql`DELETE FROM groups WHERE tournament_id = ${tournament.id}`;
+  await sql`DELETE FROM players WHERE tournament_id = ${tournament.id}`;
 
   for (const player of tournament.players) {
     await sql`

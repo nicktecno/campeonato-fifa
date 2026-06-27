@@ -14,8 +14,7 @@ CREATE TABLE IF NOT EXISTS players (
   tournament_id TEXT NOT NULL REFERENCES tournaments(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   team_id TEXT NOT NULL,
-  avatar TEXT,
-  UNIQUE (tournament_id, team_id)
+  avatar TEXT
 );
 
 CREATE TABLE IF NOT EXISTS groups (

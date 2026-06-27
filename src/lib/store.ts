@@ -12,6 +12,7 @@ import {
   dbGetAllTournaments,
   dbSaveTournament,
   dbDeleteTournament,
+  dbUpdatePlayer,
 } from "./repository";
 
 const globalForStore = globalThis as unknown as {
@@ -253,6 +254,20 @@ export async function updatePlayer(
 
   if (data.avatar !== undefined) {
     player.avatar = data.avatar || undefined;
+  }
+
+  if (isDbEnabled()) {
+    const updated = await dbUpdatePlayer(tournamentId, playerId, {
+      name: data.name !== undefined ? player.name : undefined,
+      teamId: data.teamId !== undefined ? player.teamId : undefined,
+      avatar:
+        data.avatar !== undefined ? (player.avatar ?? null) : undefined,
+    });
+    if (!updated) {
+      return { error: "Jogador não encontrado" };
+    }
+    memorySave(tournament);
+    return player;
   }
 
   await persist(tournament);
