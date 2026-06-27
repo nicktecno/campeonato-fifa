@@ -169,12 +169,71 @@ async function persist(t: Tournament): Promise<void> {
   }
 }
 
+function isTournamentDataMissing(tournament: Tournament): boolean {
+  if (tournament.status === "registration") return false;
+  if (tournament.players.length < 4) return false;
+  if (!tournament.groups.length) return true;
+  if (tournament.status === "group_stage") {
+    return !tournament.matches.some((m) => m.phase === "group");
+  }
+  if (tournament.status === "knockout" || tournament.status === "finished") {
+    return !tournament.matches.some((m) => m.phase === "knockout");
+  }
+  return false;
+}
+
+/** Reconstrói grupos/chave quando o banco perdeu partidas (ordem estável por nome). */
+function repairTournamentData(tournament: Tournament): boolean {
+  if (!isTournamentDataMissing(tournament)) return false;
+
+  const sortedPlayers = [...tournament.players].sort((a, b) =>
+    a.name.localeCompare(b.name, "pt-BR")
+  );
+
+  tournament.groups = createGroups(sortedPlayers);
+  const groupMatches = generateGroupMatches(tournament.groups);
+
+  if (
+    tournament.status === "knockout" ||
+    tournament.status === "finished"
+  ) {
+    for (const m of groupMatches) {
+      m.score1 = 0;
+      m.score2 = 0;
+      m.winnerId = null;
+    }
+    tournament.matches = groupMatches;
+    const { matches: knockoutMatches } = seedKnockoutFromGroups(
+      tournament.groups,
+      tournament.matches,
+      tournament.players
+    );
+    tournament.matches = [...tournament.matches, ...knockoutMatches];
+    tournament.status = "knockout";
+    for (const match of knockoutMatches) {
+      if (match.round === 0) applyByeIfNeeded(tournament, match);
+    }
+  } else {
+    tournament.matches = groupMatches;
+  }
+
+  return true;
+}
+
 async function load(id: string): Promise<Tournament | undefined> {
   if (isDbEnabled()) {
     const t = await dbGetTournament(id);
-    return t ?? undefined;
+    if (!t) return undefined;
+    if (repairTournamentData(t)) {
+      await persist(t);
+    }
+    return t;
   }
-  return memoryGet(id);
+  const t = memoryGet(id);
+  if (t && repairTournamentData(t)) {
+    memorySave(t);
+  }
+  return t;
 }
 
 export async function createTournament(
